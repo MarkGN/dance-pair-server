@@ -101,17 +101,15 @@ exports.event = functions.https.onRequest(async (req, res) => {
     try {
       const event = (await getDoc(doc(db, "events", body.id))).data();
       // TODO delete other unnecessary data
+      if (!event) {
+        res.status(404).send("event not found");
+      }
       sexes.forEach((sex) => {
         ["Registered","Invited"].forEach((state) => {
           event[sex+state] = Object.keys(event[sex+state]).length;
         });
       });
-      // TODO redact this sensitive info
-      if (event) {
-        res.status(200).send(event);
-      } else {
-        res.status(404).send("event not found");
-      }      
+      res.status(200).send(event);
     } catch (error) {
       console.error(error);
       // res.status(500).send({error: "error fetching event"});
