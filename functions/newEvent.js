@@ -46,7 +46,7 @@ async function newEvent(req, res) {
         }]
       }
       const eventId = await addDoc(collection(db, "events"), e);
-      res.status(201).send(eventId);
+      res.status(201).send(eventId.id);
     } catch (error) {
       console.error(error);
       res.status(500).send("Error submitting event" + error);

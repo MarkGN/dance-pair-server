@@ -23,6 +23,7 @@ async function register (req, res) {
     try {
       let result = {};
       let partner;
+      let updateData;
       await runTransaction(db, async (t) => {
         const eventDocRef = doc(db, "events", body.id);
         const eventDoc = (await t.get(eventDocRef)).data();
@@ -50,6 +51,7 @@ async function register (req, res) {
           myUpdate[key4] = inv2;
           t.update(eventDocRef, myUpdate);
           result.invite = true;
+          updateData = "invited";
         } else {
           // register
           const registrants = eventDoc[key1];
@@ -58,6 +60,7 @@ async function register (req, res) {
           myUpdate[key1] = registrants;
           t.update(eventDocRef, myUpdate);
           result.register = true;
+          updateData = "registered";
         }
       });
       console.log("Transaction successfully committed!");
@@ -68,6 +71,7 @@ async function register (req, res) {
       if (result.register) {
         sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", body.email, registerEmailBody(body.name), "Event registration");
       }
+      res.status(200).send(updateData);
     } catch (e) {
       console.log("Transaction failed: ", e);
       res.status(500).send("transaction failed");
