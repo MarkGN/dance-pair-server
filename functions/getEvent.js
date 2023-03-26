@@ -1,4 +1,5 @@
-const { doc, getDoc } = require("@firebase/firestore");
+// const { doc, getDoc } = require("@firebase/firestore");
+// const { getDoc } = require("firebase-admin/firestore");
 const { cors, db, sanityCheck } = require("./utils")
 
 const sexes = ["male", "female"];
@@ -6,33 +7,33 @@ const sexes = ["male", "female"];
 const registered = "Registered";
 const invited = "Invited";
 const stages = [registered, invited];
+const collection = db.collection("events");
 
 async function getEvent (req, res) {
-  console.log("alp")
   cors(req, res, async () => {
     const body = req.body;
     if (sanityCheck(res, body, ["id"])) {
       return;
     }
     try {
-      const event = (await getDoc(doc(db, "events", body.id))).data();
-      // TODO delete other unnecessary data
+      // const request = await getDoc(doc(collectionRef, body.id));
+      const request = await (collection.doc(body.id)).get();
+      const event = request.data();
       if (!event) {
         res.status(404).send("event not found");
+        return;
       }
       sexes.forEach((sex) => {
         stages.forEach((stage) => {
           event[sex+stage] = Object.keys(event[sex+stage]).length;
         });
       });
-      console.log("bet")
-      res.set('Access-Control-Allow-Origin', 'http://localhost:3000'); // SHOULDN'T BE HERE
+      // res.set('Access-Control-Allow-Origin', 'http://localhost:3000'); // SHOULDN'T BE HERE
       res.status(200).send(event);
     } catch (error) {
       console.error(error);
-      // res.status(500).send({error: "error fetching event"});
       if (!res.headersSent) {
-        res.status(500).send({error: "error fetching event"});
+        res.status(500).send({error: error});
       }
     }
   });

@@ -19,12 +19,14 @@ async function newEvent(req, res) {
       return;
     }
     try {
-      const endTime = body.time; //body.endTime || new Date(new Date(body.time).getTime()+3600000);
+      // const endTime = body.time; //body.endTime || new Date(new Date(body.time).getTime()+3600000);
       const e = {
         "name": body.name,
         "time": body.time,
         "location": body.location,
-        "description": body.description
+        "image": body.image || "",
+        "description": body.description,
+        "maxNoPairs": body.maxNoPairs || -1
       };
       sexes.forEach((sex) => {
         stages.forEach((stage) => {
@@ -41,7 +43,7 @@ async function newEvent(req, res) {
           "name" : user.name,
           "email" : user.email,
           "sex" : user.sex,
-          "deadline" : user.deadline || endTime,
+          // "deadline" : user.deadline || endTime,
           "timestamp" : serverTimestamp(),
         }]
       }

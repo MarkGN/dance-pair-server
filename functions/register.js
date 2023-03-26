@@ -5,13 +5,21 @@ const {cors, db, sanityCheck} = require("./utils")
 const registered = "Registered";
 const invited = "Invited";
 
-// TODO add event details
-function registerEmailBody(name) {
-  return "<html><body><p>Hello, "+name+",</p><p>You're now registered for the event.</p></body></html>"
+function registerEmailBody(name, details) {
+  return "<html><body><p>Hello, "+name+",</p><p>You're now registered for "+
+  "the event.</p>"+
+  "<p>Event name: "+details.name+"</p>"+
+  "<p>Time: "+details.time+
+  "<p>Location: "+details.location+"</p>"+
+  "<p>Description: "+details.description+"</p></body></html>";
 }
 
-function inviteEmailBody(name, partnerName) {
-  return "<html><body><p>Hello, "+name+",</p><p>You just got invited to the event, which I will TODO, because "+partnerName+" registered. Don't back out now.</p></body></html>"
+function inviteEmailBody(name, partnerName, details) {
+  return "<html><body><p>Hello, "+name+",</p><p>You just got invited to an event because "+partnerName+" registered. Don't back out now!</p>"+
+  "<p>Event name: "+details.name+"</p>"+
+  "<p>Time: "+details.time+
+  "<p>Location: "+details.location+"</p>"+
+  "<p>Description: "+details.description+"</p></body></html>";
 }
 
 async function register (req, res) {
