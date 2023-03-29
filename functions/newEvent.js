@@ -1,4 +1,3 @@
-const { addDoc, collection } = require("@firebase/firestore");
 const {cors, db, sanityCheck} = require("./utils")
 
 const sexes = ["male", "female"];
@@ -7,6 +6,7 @@ const registered = "Registered";
 const invited = "Invited";
 const stages = [registered, invited];
 // TODO: store in event, so that users can rename as they like
+const collection = db.collection("events");
 
 async function newEvent(req, res) {
   cors(req, res, async () => {
@@ -19,7 +19,6 @@ async function newEvent(req, res) {
       return;
     }
     try {
-      // const endTime = body.time; //body.endTime || new Date(new Date(body.time).getTime()+3600000);
       const e = {
         "name": body.name,
         "time": body.time,
@@ -47,7 +46,7 @@ async function newEvent(req, res) {
           "timestamp" : serverTimestamp(),
         }]
       }
-      const eventId = await addDoc(collection(db, "events"), e);
+      const eventId = await collection.add(e);
       res.status(201).send(eventId.id);
     } catch (error) {
       console.error(error);

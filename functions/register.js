@@ -5,6 +5,7 @@ const {cors, db, sanityCheck} = require("./utils")
 const registered = "Registered";
 const invited = "Invited";
 
+
 function registerEmailBody(name, details) {
   return "<html><body><p>Hello, "+name+",</p><p>You're now registered for "+
   "the event.</p>"+
@@ -32,10 +33,52 @@ async function register (req, res) {
       let result = {};
       let partner;
       let updateData;
-      await runTransaction(db, async (t) => {
-        const eventDocRef = doc(db, "events", body.id);
-        const eventDoc = (await t.get(eventDocRef)).data();
-        if (!eventDoc) {
+      let eventData;
+      // await runTransaction(db, async (t) => {
+      //   const eventDocRef = doc(db, "events", body.id);
+      //   const eventDoc = (await t.get(eventDocRef)).data();
+      //   if (!eventDoc) {
+      //     res.status(404).send({error: "event not found"});
+      //     return
+      //   }
+      //   const oppositeSex = body.sex == "male" ? "female" : "male";
+      //   const key1 = body.sex+registered;
+      //   const key2 = oppositeSex+registered;
+      //   const key3 = body.sex+invited;
+      //   const key4 = oppositeSex+invited;
+      //   const partners = eventDoc[key2];
+      //   if (partners.length) {
+      //     // invite
+      //     // TODO send emails
+      //     partner = partners.shift();
+      //     const inv1 = eventDoc[key3];
+      //     inv1.push({name:body.name, email:body.email, sex:body.sex});
+      //     const inv2 = eventDoc[key4];
+      //     inv2.push(partner);
+      //     const myUpdate = {};
+      //     myUpdate[key2] = partners;
+      //     myUpdate[key3] = inv1;
+      //     myUpdate[key4] = inv2;
+      //     t.update(eventDocRef, myUpdate);
+      //     result.invite = true;
+      //     updateData = "invited";
+      //   } else {
+      //     // register
+      //     const registrants = eventDoc[key1];
+      //     registrants.push({name:body.name, email:body.email, sex:body.sex});
+      //     const myUpdate = {};
+      //     myUpdate[key1] = registrants;
+      //     t.update(eventDocRef, myUpdate);
+      //     result.register = true;
+      //     updateData = "registered";
+      //   }
+      // });
+      await db.runTransaction(async (t) => {
+        const collection = db.collection("events");
+        // const eventDocRef = doc(db, "events", body.id);
+        const eventDocRef = collection.doc(body.id);
+        eventData = (await t.get(eventDocRef)).data();
+        if (!eventData) {
           res.status(404).send({error: "event not found"});
           return
         }
@@ -44,14 +87,14 @@ async function register (req, res) {
         const key2 = oppositeSex+registered;
         const key3 = body.sex+invited;
         const key4 = oppositeSex+invited;
-        const partners = eventDoc[key2];
+        const partners = eventData[key2];
         if (partners.length) {
           // invite
           // TODO send emails
           partner = partners.shift();
-          const inv1 = eventDoc[key3];
+          const inv1 = eventData[key3];
           inv1.push({name:body.name, email:body.email, sex:body.sex});
-          const inv2 = eventDoc[key4];
+          const inv2 = eventData[key4];
           inv2.push(partner);
           const myUpdate = {};
           myUpdate[key2] = partners;
@@ -62,7 +105,7 @@ async function register (req, res) {
           updateData = "invited";
         } else {
           // register
-          const registrants = eventDoc[key1];
+          const registrants = eventData[key1];
           registrants.push({name:body.name, email:body.email, sex:body.sex});
           const myUpdate = {};
           myUpdate[key1] = registrants;
@@ -73,16 +116,16 @@ async function register (req, res) {
       });
       console.log("Transaction successfully committed!");
       if (result.invite) {
-        sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", body.email, inviteEmailBody(body.name, partner.name), "Event invitation");
-        sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", partner.email, inviteEmailBody(partner.name, body.name), "Event invitation");
+        sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", body.email, inviteEmailBody(body.name, partner.name, eventData), "Event invitation");
+        sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", partner.email, inviteEmailBody(partner.name, body.name, eventData), "Event invitation");
       }
       if (result.register) {
-        sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", body.email, registerEmailBody(body.name), "Event registration");
+        sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", body.email, registerEmailBody(body.name, eventData), "Event registration");
       }
       res.status(200).send(updateData);
     } catch (e) {
       console.log("Transaction failed: ", e);
-      res.status(500).send("transaction failed");
+      res.status(500).send("transaction failed: " + JSON.stringify(e));
     }
   });
 }
