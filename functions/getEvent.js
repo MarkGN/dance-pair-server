@@ -28,8 +28,15 @@ async function getEvent (req, res) {
           event[sex+stage] = Object.keys(event[sex+stage]).length;
         });
       });
-      // res.set('Access-Control-Allow-Origin', 'http://localhost:3000'); // SHOULDN'T BE HERE
-      res.status(200).send(event);
+      const dataToSend = {
+        name: event.name, 
+        location: event.location, 
+        time: event.time, 
+        description: 
+        event.description, 
+        image: event.image, 
+        numPairs: Math.min(sexes.map(sex => event[sex+invited]))};
+      res.status(200).send(dataToSend);
     } catch (error) {
       console.error(error);
       if (!res.headersSent) {

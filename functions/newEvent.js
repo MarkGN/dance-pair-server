@@ -50,7 +50,9 @@ async function newEvent(req, res) {
       res.status(201).send(eventId.id);
     } catch (error) {
       console.error(error);
-      res.status(500).send("Error submitting event" + error);
+      if (!res.headersSent) {
+        res.status(500).send("Error submitting event" + error);
+      }
     }
   });
 };

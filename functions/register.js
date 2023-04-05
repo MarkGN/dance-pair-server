@@ -34,53 +34,13 @@ async function register (req, res) {
       let partner;
       let updateData;
       let eventData;
-      // await runTransaction(db, async (t) => {
-      //   const eventDocRef = doc(db, "events", body.id);
-      //   const eventDoc = (await t.get(eventDocRef)).data();
-      //   if (!eventDoc) {
-      //     res.status(404).send({error: "event not found"});
-      //     return
-      //   }
-      //   const oppositeSex = body.sex == "male" ? "female" : "male";
-      //   const key1 = body.sex+registered;
-      //   const key2 = oppositeSex+registered;
-      //   const key3 = body.sex+invited;
-      //   const key4 = oppositeSex+invited;
-      //   const partners = eventDoc[key2];
-      //   if (partners.length) {
-      //     // invite
-      //     // TODO send emails
-      //     partner = partners.shift();
-      //     const inv1 = eventDoc[key3];
-      //     inv1.push({name:body.name, email:body.email, sex:body.sex});
-      //     const inv2 = eventDoc[key4];
-      //     inv2.push(partner);
-      //     const myUpdate = {};
-      //     myUpdate[key2] = partners;
-      //     myUpdate[key3] = inv1;
-      //     myUpdate[key4] = inv2;
-      //     t.update(eventDocRef, myUpdate);
-      //     result.invite = true;
-      //     updateData = "invited";
-      //   } else {
-      //     // register
-      //     const registrants = eventDoc[key1];
-      //     registrants.push({name:body.name, email:body.email, sex:body.sex});
-      //     const myUpdate = {};
-      //     myUpdate[key1] = registrants;
-      //     t.update(eventDocRef, myUpdate);
-      //     result.register = true;
-      //     updateData = "registered";
-      //   }
-      // });
       await db.runTransaction(async (t) => {
         const collection = db.collection("events");
-        // const eventDocRef = doc(db, "events", body.id);
         const eventDocRef = collection.doc(body.id);
         eventData = (await t.get(eventDocRef)).data();
         if (!eventData) {
           res.status(404).send({error: "event not found"});
-          return
+          return;
         }
         const oppositeSex = body.sex == "male" ? "female" : "male";
         const key1 = body.sex+registered;
@@ -88,9 +48,16 @@ async function register (req, res) {
         const key3 = body.sex+invited;
         const key4 = oppositeSex+invited;
         const partners = eventData[key2];
+        [key1, key2, key3, key4].some(key => {
+          eventData[key].some(registrant => {
+            if (registrant.email === body.email) {
+              res.status(500).send({error: "You already registered."});
+              return;
+            }
+          })
+        });
         if (partners.length) {
           // invite
-          // TODO send emails
           partner = partners.shift();
           const inv1 = eventData[key3];
           inv1.push({name:body.name, email:body.email, sex:body.sex});
@@ -125,7 +92,9 @@ async function register (req, res) {
       res.status(200).send(updateData);
     } catch (e) {
       console.log("Transaction failed: ", e);
-      res.status(500).send("transaction failed: " + JSON.stringify(e));
+      if (!res.headersSent) {
+        res.status(500).send("transaction failed: " + JSON.stringify(e));
+      }
     }
   });
 }
