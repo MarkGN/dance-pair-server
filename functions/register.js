@@ -34,13 +34,14 @@ async function register (req, res) {
       let partner;
       let updateData;
       let eventData;
+      let shouldContinue = true;
       await db.runTransaction(async (t) => {
         const collection = db.collection("events");
         const eventDocRef = collection.doc(body.id);
         eventData = (await t.get(eventDocRef)).data();
         if (!eventData) {
           res.status(404).send({error: "event not found"});
-          return;
+          shouldContinue = false;
         }
         const oppositeSex = body.sex == "male" ? "female" : "male";
         const key1 = body.sex+registered;
@@ -52,36 +53,37 @@ async function register (req, res) {
           eventData[key].some(registrant => {
             if (registrant.email === body.email) {
               res.status(500).send({error: "You already registered."});
-              return;
+              shouldContinue = false;
             }
           })
         });
-        if (partners.length) {
-          // invite
-          partner = partners.shift();
-          const inv1 = eventData[key3];
-          inv1.push({name:body.name, email:body.email, sex:body.sex});
-          const inv2 = eventData[key4];
-          inv2.push(partner);
-          const myUpdate = {};
-          myUpdate[key2] = partners;
-          myUpdate[key3] = inv1;
-          myUpdate[key4] = inv2;
-          t.update(eventDocRef, myUpdate);
-          result.invite = true;
-          updateData = "invited";
-        } else {
-          // register
-          const registrants = eventData[key1];
-          registrants.push({name:body.name, email:body.email, sex:body.sex});
-          const myUpdate = {};
-          myUpdate[key1] = registrants;
-          t.update(eventDocRef, myUpdate);
-          result.register = true;
-          updateData = "registered";
+        if (shouldContinue) {
+          if (partners.length) {
+            // invite
+            partner = partners.shift();
+            const inv1 = eventData[key3];
+            inv1.push({name:body.name, email:body.email, sex:body.sex});
+            const inv2 = eventData[key4];
+            inv2.push(partner);
+            const myUpdate = {};
+            myUpdate[key2] = partners;
+            myUpdate[key3] = inv1;
+            myUpdate[key4] = inv2;
+            t.update(eventDocRef, myUpdate);
+            result.invite = true;
+            updateData = "invited";
+          } else {
+            // register
+            const registrants = eventData[key1];
+            registrants.push({name:body.name, email:body.email, sex:body.sex});
+            const myUpdate = {};
+            myUpdate[key1] = registrants;
+            t.update(eventDocRef, myUpdate);
+            result.register = true;
+            updateData = "registered";
+          }
         }
       });
-      console.log("Transaction successfully committed!");
       if (result.invite) {
         sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", body.email, inviteEmailBody(body.name, partner.name, eventData), "Event invitation");
         sendEmail("inviter@dance-pair.web.app", "Dance-pair inviter bot", partner.email, inviteEmailBody(partner.name, body.name, eventData), "Event invitation");
