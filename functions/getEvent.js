@@ -16,7 +16,6 @@ async function getEvent (req, res) {
       return;
     }
     try {
-      // const request = await getDoc(doc(collectionRef, body.id));
       const request = await (collection.doc(body.id)).get();
       const event = request.data();
       if (!event) {

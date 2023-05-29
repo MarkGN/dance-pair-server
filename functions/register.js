@@ -8,7 +8,7 @@ const invited = "Invited";
 
 function registerEmailBody(name, details) {
   return "<html><body><p>Hello, "+name+",</p><p>You're now registered for "+
-  "the event.</p>"+
+  "the event. We'll send a follow-up email with confirmation once we have a partner for you.</p>"+
   "<p>Event name: "+details.name+"</p>"+
   "<p>Time: "+details.time+
   "<p>Location: "+details.location+"</p>"+
